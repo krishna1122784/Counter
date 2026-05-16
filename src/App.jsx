@@ -155,7 +155,7 @@ function App() {
     const newSpawn = {
       id,
       side,
-      top: `${45 + Math.random() * 10}%`
+      top: `${15 + Math.random() * 25}%`
     };
     setSpawns((prev) => [...prev, newSpawn]);
 
