@@ -1,0 +1,324 @@
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  position: relative;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background Image Transition */
+.background-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  transition: opacity 2s ease-in-out;
+}
+
+.bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+  filter: brightness(0.4) contrast(1.1);
+}
+
+.bg-image.active {
+  opacity: 1;
+}
+
+/* Floating Background Texts */
+.bg-text-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bg-text {
+  position: absolute;
+  color: rgba(255, 215, 0, 0.15); /* Gold color with low opacity */
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  animation: floatUp 10s linear infinite, fadeInOut 10s ease-in-out infinite;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(100vh) scale(0.5); }
+  100% { transform: translateY(-20vh) scale(1.2); }
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 1; }
+}
+
+/* UI Overlay */
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let clicks pass through except on children with pointer-events: auto */
+}
+
+/* Counter Display */
+.counter-box {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  background: rgba(25, 25, 30, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 20px 50px;
+  color: #fff;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.counter-box.bump {
+  transform: scale(1.1);
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.4);
+}
+
+.counter-title {
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #ffcccc;
+  margin-bottom: 10px;
+}
+
+.counter-value {
+  font-size: 5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: red;
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+  margin: 0;
+}
+
+/* Controls */
+.controls-box {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px;
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn {
+  padding: 15px 30px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-stop {
+  background: linear-gradient(135deg, #f5576c 0%, #ff4b2b 100%);
+  color: white;
+}
+
+.btn-start {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+}
+
+/* Main Spawning Text */
+.spawning-text-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.spawning-text {
+  position: absolute;
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  /* Gold text with nice shadow */
+  background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+  
+  /* Will be animated via Framer Motion or React state */
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.spawning-text.text-red {
+  background: linear-gradient(to right, #ff4b2b, #ff416c, #ff4b2b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6));
+}
+
+/* Setup Screen / Modal */
+.setup-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.setup-modal {
+  background: rgba(20, 20, 25, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 30px;
+  padding: 40px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+  z-index: 20;
+  color: white;
+  text-align: left;
+}
+
+.setup-title {
+  color: #ffd700;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  letter-spacing: 1px;
+}
+
+.input-group {
+  margin-bottom: 25px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 1rem;
+  color: #ccc;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #ffd700;
+}
+
+.timing-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.timing-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.3s;
+}
+
+.timing-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.timing-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.setup-start-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 15px;
+  font-size: 1.2rem;
+}
+
+
