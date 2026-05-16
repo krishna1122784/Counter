@@ -49,12 +49,23 @@ function App() {
   }, [isSetupComplete, backgrounds.length]);
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setBackgrounds(prev => [...prev, imageUrl]);
-      // Optional: immediately switch to the new background
-      setBgIndex(backgrounds.length);
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const newUrls = files.map(file => URL.createObjectURL(file));
+      
+      setBackgrounds(prev => {
+        // Interleave the existing backgrounds with the new ones in an alternate fashion
+        const interleaved = [];
+        const maxLength = Math.max(prev.length, newUrls.length);
+        for (let i = 0; i < maxLength; i++) {
+          if (i < prev.length) interleaved.push(prev[i]);
+          if (i < newUrls.length) interleaved.push(newUrls[i]);
+        }
+        return interleaved;
+      });
+      
+      // Optionally switch index to show something new soon
+      setBgIndex(prev => (prev + 1) % (backgrounds.length + newUrls.length));
     }
   };
 
@@ -204,7 +215,7 @@ function App() {
       </div>
 
       {/* Background Floating Text Layer */}
-      <div className="bg-text-layer" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}>
+      <div className="bg-text-layer" style={{ zoom: zoomLevel }}>
         {bgTexts.map((txt) => (
           <div
             key={txt.id}
@@ -221,7 +232,7 @@ function App() {
       </div>
 
       {/* Main Spawning Text Layer */}
-      <div className="spawning-text-container">
+      <div className="spawning-text-container" style={{ zoom: zoomLevel }}>
         <AnimatePresence>
           {spawns.map((spawn) => (
             <motion.div
@@ -231,10 +242,10 @@ function App() {
               initial={{ 
                 left: spawn.side === 'left' ? '-20%' : '120%', 
                 opacity: 1, 
-                scale: 0.5 * zoomLevel 
+                scale: 0.5 
               }}
-              animate={{ left: '50%', x: '-50%', opacity: 1, scale: 1.5 * zoomLevel }}
-              exit={{ opacity: 0, scale: 2 * zoomLevel, filter: 'blur(10px)' }}
+              animate={{ left: '50%', x: '-50%', opacity: 1, scale: 1.5 }}
+              exit={{ opacity: 0, scale: 2, filter: 'blur(10px)' }}
               transition={{ duration: 1.5, ease: "easeInOut" }}
             >
               {chantText || 'Radha Radha'}
@@ -244,12 +255,12 @@ function App() {
       </div>
 
       {/* UI Overlay Layer */}
-      <div className="ui-overlay">
+      <div className="ui-overlay" style={{ zoom: zoomLevel }}>
         {/* Top Menu Bar */}
         <div className="top-bar">
           <div className="user-greeting">Jai Shri Krishna, {userName || 'Devotee'}</div>
           <div className="top-controls">
-            <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+            <input type="file" accept="image/*" multiple ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
             <button className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current.click()}>🖼️ Upload BG</button>
             <div className="zoom-controls">
               <button className="btn btn-secondary btn-sm" onClick={handleZoomOut}>-</button>
@@ -261,7 +272,7 @@ function App() {
           </div>
         </div>
 
-        <div className="ui-bottom" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'bottom center', transition: 'transform 0.3s ease' }}>
+        <div className="ui-bottom">
           <div className="controls-box">
             <button 
               className="btn btn-primary" 
