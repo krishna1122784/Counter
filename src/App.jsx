@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { saveBackground, getBackgrounds, clearBackgrounds } from './idbUtils';
 import './App.css';
-
-const API_BASE_URL = 'http://localhost:8080/api';
 
 const INITIAL_BACKGROUNDS = [
   '/images/radha.png',
@@ -10,6 +9,16 @@ const INITIAL_BACKGROUNDS = [
   '/images/laddu_gopal.png',
   '/images/maharaj_ji.png'
 ];
+
+// Helper to convert File to Base64 Data URL
+const fileToDataUrl = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -39,24 +48,18 @@ function App() {
   const nextSideRef = useRef('left');
   const fileInputRef = useRef(null);
 
-  const loadUserData = async (userId) => {
+  const loadUserData = async (loggedInUser) => {
     try {
-      // Load History
-      const histRes = await fetch(`${API_BASE_URL}/history/${userId}`);
-      if (histRes.ok) {
-        setHistory(await histRes.json());
-      }
+      // Load History from localStorage tied to the username
+      const savedHist = localStorage.getItem(`jaap_history_${loggedInUser.username}`);
+      setHistory(savedHist ? JSON.parse(savedHist) : []);
 
-      // Load Backgrounds
-      const bgRes = await fetch(`${API_BASE_URL}/backgrounds/${userId}`);
-      if (bgRes.ok) {
-        const bgIds = await bgRes.json();
-        if (bgIds.length > 0) {
-          const newUrls = bgIds.map(id => `${API_BASE_URL}/backgrounds/image/${id}`);
-          setBackgrounds(newUrls);
-        } else {
-          setBackgrounds(INITIAL_BACKGROUNDS);
-        }
+      // Load Backgrounds from IndexedDB
+      const bgs = await getBackgrounds(loggedInUser.id);
+      if (bgs && bgs.length > 0) {
+        setBackgrounds(bgs);
+      } else {
+        setBackgrounds(INITIAL_BACKGROUNDS);
       }
     } catch (e) {
       console.error("Failed to load user data", e);
@@ -65,22 +68,34 @@ function App() {
 
   const handleAuth = async () => {
     setAuthError('');
-    const endpoint = isLoginView ? '/auth/login' : '/auth/register';
-    try {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword })
-      });
-      if (res.ok) {
-        const loggedInUser = await res.json();
-        setUser(loggedInUser);
-        loadUserData(loggedInUser.id);
+    const users = JSON.parse(localStorage.getItem('radha_users') || '[]');
+
+    if (!loginUsername || !loginPassword) {
+      setAuthError('Please enter both username and password');
+      return;
+    }
+
+    if (isLoginView) {
+      // Login Logic
+      const foundUser = users.find(u => u.username === loginUsername && u.password === loginPassword);
+      if (foundUser) {
+        setUser(foundUser);
+        loadUserData(foundUser);
       } else {
-        setAuthError(isLoginView ? 'Invalid credentials' : 'Username already exists');
+        setAuthError('Invalid credentials');
       }
-    } catch (e) {
-      setAuthError('Cannot connect to server. Is Spring Boot running?');
+    } else {
+      // Register Logic
+      const exists = users.find(u => u.username === loginUsername);
+      if (exists) {
+        setAuthError('Username already exists');
+      } else {
+        const newUser = { id: Date.now(), username: loginUsername, password: loginPassword };
+        users.push(newUser);
+        localStorage.setItem('radha_users', JSON.stringify(users));
+        setUser(newUser);
+        loadUserData(newUser);
+      }
     }
   };
 
@@ -95,19 +110,19 @@ function App() {
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0 && user) {
-      const formData = new FormData();
-      files.forEach(f => formData.append('files', f));
-
       try {
-        const res = await fetch(`${API_BASE_URL}/backgrounds/${user.id}`, {
-          method: 'POST',
-          body: formData
-        });
-        if (res.ok) {
-          // Reload backgrounds
-          await loadUserData(user.id);
-          setBgIndex(0);
+        // Clear previous backgrounds to "replace" them
+        await clearBackgrounds(user.id);
+        
+        // Save new backgrounds to IndexedDB
+        for (const file of files) {
+          const dataUrl = await fileToDataUrl(file);
+          await saveBackground(user.id, dataUrl);
         }
+
+        // Reload UI
+        await loadUserData(user);
+        setBgIndex(0);
       } catch (err) {
         console.error("Failed to upload backgrounds", err);
       }
@@ -150,18 +165,19 @@ function App() {
     }, 1500);
   }, []);
 
-  const saveSession = useCallback(async () => {
+  const saveSession = useCallback(() => {
     if (count > 0 && user) {
-      try {
-        await fetch(`${API_BASE_URL}/history`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, jaapName: chantText || 'Radha Radha', count })
-        });
-        loadUserData(user.id); // Refresh history
-      } catch (e) {
-        console.error("Failed to save session", e);
-      }
+      const newSession = {
+        id: Date.now(),
+        userName: user.username,
+        jaapName: chantText || 'Radha Radha',
+        count,
+        date: new Date().toLocaleString()
+      };
+      const savedHist = JSON.parse(localStorage.getItem(`jaap_history_${user.username}`) || '[]');
+      const newHistory = [newSession, ...savedHist];
+      localStorage.setItem(`jaap_history_${user.username}`, JSON.stringify(newHistory));
+      setHistory(newHistory);
     }
   }, [count, user, chantText]);
 
@@ -233,7 +249,7 @@ function App() {
     return (
       <div className="app-container setup-screen">
         <div className="background-container">
-          <img src={backgrounds[0]} alt="Background" className="bg-image active" style={{filter: 'brightness(0.2)'}} />
+          <img src={backgrounds[0] || INITIAL_BACKGROUNDS[0]} alt="Background" className="bg-image active" style={{filter: 'brightness(0.2)'}} />
         </div>
         <div className="setup-modal">
           <h2 className="setup-title">Configure Your Jaap</h2>
@@ -341,8 +357,8 @@ function App() {
                 history.map(item => (
                   <div key={item.id} className="history-card">
                     <div className="history-card-header">
-                      <strong>👤 {user.username}</strong>
-                      <span className="history-date">{new Date(item.timestamp).toLocaleString()}</span>
+                      <strong>👤 {item.userName}</strong>
+                      <span className="history-date">{item.date}</span>
                     </div>
                     <div className="history-card-body">
                       Chanted <span className="highlight">{item.jaapName}</span> - <strong>{item.count} times</strong>
@@ -351,6 +367,19 @@ function App() {
                 ))
               )}
             </div>
+
+            {history.length > 0 && (
+              <button 
+                className="btn btn-stop w-100" 
+                style={{marginTop: '20px'}}
+                onClick={() => { 
+                  setHistory([]); 
+                  localStorage.removeItem(`jaap_history_${user.username}`); 
+                }}
+              >
+                Clear History
+              </button>
+            )}
           </div>
         </div>
       )}
