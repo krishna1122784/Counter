@@ -312,7 +312,7 @@ function App() {
 
       <div className="ui-overlay" style={{ zoom: zoomLevel }}>
         <div className="top-bar">
-          <div className="user-greeting">Jai Shri Krishna, {user.username}</div>
+          <div className="user-greeting">{chantText || 'Jai Shri Krishna'}, {user.username}</div>
           <div className="top-controls">
             <input type="file" accept="image/*" multiple ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
             <button className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current.click()}>🖼️ Upload BG</button>
