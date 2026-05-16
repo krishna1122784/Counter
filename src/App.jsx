@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
-const BACKGROUNDS = [
+const INITIAL_BACKGROUNDS = [
   '/images/radha.png',
   '/images/krishna.png',
   '/images/laddu_gopal.png',
@@ -11,26 +11,52 @@ const BACKGROUNDS = [
 
 function App() {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [userName, setUserName] = useState('');
   const [chantText, setChantText] = useState('Radha Radha');
   const [intervalSeconds, setIntervalSeconds] = useState(3);
 
   const [count, setCount] = useState(0);
   const [autoMode, setAutoMode] = useState(false);
+  
+  // Background State
+  const [backgrounds, setBackgrounds] = useState(INITIAL_BACKGROUNDS);
   const [bgIndex, setBgIndex] = useState(0);
+  
   const [spawns, setSpawns] = useState([]);
   const [bgTexts, setBgTexts] = useState([]);
   const [bump, setBump] = useState(false);
   
+  // Zoom State
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  // History State
+  const [history, setHistory] = useState(() => {
+    const saved = localStorage.getItem('jaap_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  
   const nextSideRef = useRef('left');
+  const fileInputRef = useRef(null);
 
   // Cycle background images every 5 seconds
   useEffect(() => {
     if (!isSetupComplete) return;
     const interval = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % BACKGROUNDS.length);
+      setBgIndex((prev) => (prev + 1) % backgrounds.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [isSetupComplete]);
+  }, [isSetupComplete, backgrounds.length]);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setBackgrounds(prev => [...prev, imageUrl]);
+      // Optional: immediately switch to the new background
+      setBgIndex(backgrounds.length);
+    }
+  };
 
   // Generate random background floating texts
   useEffect(() => {
@@ -74,9 +100,35 @@ function App() {
     }, 1500);
   }, []);
 
+  const saveSession = useCallback(() => {
+    if (count > 0) {
+      const newSession = {
+        id: Date.now(),
+        userName: userName || 'Devotee',
+        jaapName: chantText || 'Radha Radha',
+        count,
+        date: new Date().toLocaleString()
+      };
+      const newHistory = [newSession, ...history];
+      setHistory(newHistory);
+      localStorage.setItem('jaap_history', JSON.stringify(newHistory));
+    }
+  }, [count, userName, chantText, history]);
+
   const resetCount = useCallback(() => {
+    saveSession();
     setCount(0);
-  }, []);
+  }, [saveSession]);
+
+  const handleLogout = useCallback(() => {
+    saveSession();
+    setCount(0);
+    setAutoMode(false);
+    setIsSetupComplete(false);
+  }, [saveSession]);
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
 
   // Auto spawn interval
   useEffect(() => {
@@ -95,11 +147,21 @@ function App() {
     return (
       <div className="app-container setup-screen">
         <div className="background-container">
-          <img src={BACKGROUNDS[0]} alt="Spiritual Background" className="bg-image active" style={{filter: 'brightness(0.2)'}} />
+          <img src={backgrounds[0]} alt="Spiritual Background" className="bg-image active" style={{filter: 'brightness(0.2)'}} />
         </div>
         <div className="setup-modal">
           <h2 className="setup-title">Configure Your Jaap</h2>
           
+          <div className="input-group">
+            <label>Your Name</label>
+            <input 
+              type="text" 
+              value={userName} 
+              onChange={(e) => setUserName(e.target.value)} 
+              placeholder="e.g. Devotee"
+            />
+          </div>
+
           <div className="input-group">
             <label>Name of Jaap</label>
             <input 
@@ -131,7 +193,7 @@ function App() {
     <div className="app-container">
       {/* Background Images Layer */}
       <div className="background-container">
-        {BACKGROUNDS.map((bg, index) => (
+        {backgrounds.map((bg, index) => (
           <img
             key={bg}
             src={bg}
@@ -142,7 +204,7 @@ function App() {
       </div>
 
       {/* Background Floating Text Layer */}
-      <div className="bg-text-layer">
+      <div className="bg-text-layer" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}>
         {bgTexts.map((txt) => (
           <div
             key={txt.id}
@@ -169,10 +231,10 @@ function App() {
               initial={{ 
                 left: spawn.side === 'left' ? '-20%' : '120%', 
                 opacity: 1, 
-                scale: 0.5 
+                scale: 0.5 * zoomLevel 
               }}
-              animate={{ left: '50%', x: '-50%', opacity: 1, scale: 1.5 }}
-              exit={{ opacity: 0, scale: 2, filter: 'blur(10px)' }}
+              animate={{ left: '50%', x: '-50%', opacity: 1, scale: 1.5 * zoomLevel }}
+              exit={{ opacity: 0, scale: 2 * zoomLevel, filter: 'blur(10px)' }}
               transition={{ duration: 1.5, ease: "easeInOut" }}
             >
               {chantText || 'Radha Radha'}
@@ -183,34 +245,92 @@ function App() {
 
       {/* UI Overlay Layer */}
       <div className="ui-overlay">
-        <div className={`counter-box ${bump ? 'bump' : ''}`}>
-          <div className="counter-title">Chant Count</div>
-          <h1 className="counter-value">{count}</h1>
+        {/* Top Menu Bar */}
+        <div className="top-bar">
+          <div className="user-greeting">Jai Shri Krishna, {userName || 'Devotee'}</div>
+          <div className="top-controls">
+            <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+            <button className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current.click()}>🖼️ Upload BG</button>
+            <div className="zoom-controls">
+              <button className="btn btn-secondary btn-sm" onClick={handleZoomOut}>-</button>
+              <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+              <button className="btn btn-secondary btn-sm" onClick={handleZoomIn}>+</button>
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowHistory(true)}>📜 History</button>
+            <button className="btn btn-stop btn-sm" onClick={handleLogout}>🚪 Logout</button>
+          </div>
         </div>
 
-        <div className="controls-box">
-          <button 
-            className="btn btn-primary" 
-            onClick={spawnText}
-          >
-            Manual Chant
-          </button>
-          
-          <button 
-            className={`btn ${autoMode ? 'btn-stop' : 'btn-start'}`}
-            onClick={() => setAutoMode(!autoMode)}
-          >
-            {autoMode ? `Stop Auto (${intervalSeconds}s)` : `Start Auto (${intervalSeconds}s)`}
-          </button>
+        <div className="ui-bottom" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'bottom center', transition: 'transform 0.3s ease' }}>
+          <div className="controls-box">
+            <button 
+              className="btn btn-primary" 
+              onClick={spawnText}
+            >
+              Manual Chant
+            </button>
+            
+            <button 
+              className={`btn ${autoMode ? 'btn-stop' : 'btn-start'}`}
+              onClick={() => setAutoMode(!autoMode)}
+            >
+              {autoMode ? `Stop Auto (${intervalSeconds}s)` : `Start Auto (${intervalSeconds}s)`}
+            </button>
 
-          <button 
-            className="btn btn-secondary" 
-            onClick={resetCount}
-          >
-            Reset Count
-          </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={resetCount}
+            >
+              Reset Count
+            </button>
+          </div>
+
+          <div className={`counter-box ${bump ? 'bump' : ''}`}>
+            <div className="counter-title">Chant Count</div>
+            <h1 className="counter-value">{count}</h1>
+          </div>
         </div>
       </div>
+
+      {/* History Modal */}
+      {showHistory && (
+        <div className="history-modal-overlay">
+          <div className="history-modal">
+            <div className="history-header">
+              <h2>Jaap History</h2>
+              <button className="close-btn" onClick={() => setShowHistory(false)}>✕</button>
+            </div>
+            
+            <div className="history-list">
+              {history.length === 0 ? (
+                <p className="no-history">No history found. Start your devotion!</p>
+              ) : (
+                history.map(item => (
+                  <div key={item.id} className="history-card">
+                    <div className="history-card-header">
+                      <strong>👤 {item.userName}</strong>
+                      <span className="history-date">{item.date}</span>
+                    </div>
+                    <div className="history-card-body">
+                      Chanted <span className="highlight">{item.jaapName}</span> - <strong>{item.count} times</strong>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {history.length > 0 && (
+              <button 
+                className="btn btn-stop w-100" 
+                style={{marginTop: '20px'}}
+                onClick={() => { setHistory([]); localStorage.removeItem('jaap_history'); }}
+              >
+                Clear History
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

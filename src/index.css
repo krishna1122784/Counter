@@ -19,7 +19,6 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden; /* Hide scrollbars as this is a full-screen animation app */
 }
 
 h1 {
