@@ -748,6 +748,50 @@ function App() {
     };
   }, [autoMode, spawnText, intervalSeconds]);
 
+  // Prevent screen sleep in Auto Mode
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestLock = async () => {
+      try {
+        if ('wakeLock' in navigator && autoMode) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Wake Lock acquired successfully.');
+        }
+      } catch (err) {
+        console.warn('Failed to acquire Wake Lock:', err);
+      }
+    };
+
+    const releaseLock = async () => {
+      try {
+        if (wakeLock !== null) {
+          await wakeLock.release();
+          wakeLock = null;
+          console.log('Wake Lock released.');
+        }
+      } catch (err) {
+        console.warn('Failed to release Wake Lock:', err);
+      }
+    };
+
+    if (autoMode) {
+      requestLock();
+
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          requestLock();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibility);
+        releaseLock();
+      };
+    }
+  }, [autoMode]);
+
   if (!user) {
     return (
       <div className="app-container setup-screen">
