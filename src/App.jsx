@@ -55,7 +55,8 @@ const TRANSLATIONS = {
     customInterval: "Custom Count",
     editChant: "Edit Jaap Name",
     saveSettings: "Apply & Close",
-    keyboard: "Keyboard"
+    keyboard: "Keyboard",
+    soundSpeedLabel: "Chanting Speed"
   },
   hi: {
     loginTitle: "भक्ति में लॉगिन करें",
@@ -100,8 +101,9 @@ const TRANSLATIONS = {
     everyChant: "हर जाप पर",
     customInterval: "कस्टम संख्या",
     editChant: "जाप नाम बदलें",
-    saveSettings: "लागू और बंद करें",
-    keyboard: "कीबोर्ड"
+    saveSettings: "काबू और बंद करें",
+    keyboard: "कीबोर्ड",
+    soundSpeedLabel: "आवाज की गति"
   },
   sa: {
     loginTitle: "भक्तौ प्रवेशः",
@@ -147,7 +149,8 @@ const TRANSLATIONS = {
     customInterval: "इच्छानुसारसंख्या",
     editChant: "जापनाम परिवर्तनम्",
     saveSettings: "पिदधातु",
-    keyboard: "कुञ्जीपटल"
+    keyboard: "कुञ्जीपटल",
+    soundSpeedLabel: "वाणीगतिः"
   },
   mai: {
     loginTitle: "भक्ति में लॉगिन करू",
@@ -193,7 +196,8 @@ const TRANSLATIONS = {
     customInterval: "मनपसन्द संख्या",
     editChant: "जाप क नाम बदलू",
     saveSettings: "लागू आ बंद करू",
-    keyboard: "कीबोर्ड"
+    keyboard: "कीबोर्ड",
+    soundSpeedLabel: "आवाजक गति"
   },
   bho: {
     loginTitle: "भक्ति में लॉगिन करीं",
@@ -239,7 +243,8 @@ const TRANSLATIONS = {
     customInterval: "मनपसंद संख्या",
     editChant: "जाप के नाम बदलीं",
     saveSettings: "लागू अउरी बंद करीं",
-    keyboard: "कीबोर्ड"
+    keyboard: "कीबोर्ड",
+    soundSpeedLabel: "आवाज के गति"
   }
 };
 
@@ -581,7 +586,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Helper to speak the chant using Web Speech API
-const speakChant = (text, langCode = 'hi') => {
+const speakChant = (text, langCode = 'hi', speed = 0.8) => {
   try {
     if (!('speechSynthesis' in window)) return;
     
@@ -660,7 +665,7 @@ const speakChant = (text, langCode = 'hi') => {
     
     const utterance = new SpeechSynthesisUtterance(speakText);
     utterance.lang = finalLang;
-    utterance.rate = 0.80; // Slower, highly realistic and devotional pacing
+    utterance.rate = speed; // Slower, highly realistic and devotional pacing
     utterance.pitch = 1.05; // Sweet, clear, warm devotional pitch
     utterance.volume = 1.0; // Enforce maximum volume
     
@@ -747,6 +752,14 @@ function App() {
   });
   const [customSoundInterval, setCustomSoundInterval] = useState(() => Number(localStorage.getItem('jaap_custom_sound_interval')) || 10);
   const [showSoundModal, setShowSoundModal] = useState(false);
+  const [soundSpeed, setSoundSpeed] = useState(() => {
+    const saved = localStorage.getItem('jaap_sound_speed');
+    return saved ? parseFloat(saved) : 0.8;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('jaap_sound_speed', soundSpeed.toString());
+  }, [soundSpeed]);
 
   useEffect(() => {
     localStorage.setItem('jaap_sound_muted', isMuted);
@@ -977,7 +990,7 @@ function App() {
           playTempleBell();
         }
         if (soundType === 'voice' || soundType === 'both') {
-          speakChant(chantText, language);
+          speakChant(chantText, language, soundSpeed);
         }
       }
     }
@@ -1411,6 +1424,40 @@ function App() {
                   ))}
                 </div>
               </div>
+
+              {/* Chanting Speed Control */}
+              {soundType !== 'bell' && (
+                <div className="sound-setting-block">
+                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#ffd700' }}>⚡ {TRANSLATIONS[language].soundSpeedLabel}: {soundSpeed.toFixed(2)}x</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 18px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>🐌 Slow</span>
+                    <input 
+                      type="range" 
+                      min="0.5" 
+                      max="1.5" 
+                      step="0.05" 
+                      value={soundSpeed} 
+                      onChange={(e) => setSoundSpeed(parseFloat(e.target.value))} 
+                      style={{ flex: 1, accentColor: '#ffd700', cursor: 'pointer', height: '6px', borderRadius: '3px' }}
+                    />
+                    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>⚡ Fast</span>
+                  </div>
+                  {/* Quick speed pills */}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    {[0.6, 0.8, 1.0, 1.2].map(speed => (
+                      <button
+                        key={speed}
+                        type="button"
+                        className={`chant-pill ${soundSpeed === speed ? 'active' : ''}`}
+                        style={{ padding: '6px 12px', fontSize: '0.85rem', flex: 1, textAlign: 'center' }}
+                        onClick={() => setSoundSpeed(speed)}
+                      >
+                        {speed.toFixed(1)}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Alert Interval */}
               <div className="sound-setting-block">
