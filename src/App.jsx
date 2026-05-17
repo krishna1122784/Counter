@@ -1229,7 +1229,7 @@ function App() {
           playTempleBell();
         }
         if (soundType === 'voice' || soundType === 'both') {
-          speakChant(chantText, language, soundSpeed);
+          speakChant(chantText, language, soundSpeed, chantTextRaw);
         }
       }
     }
@@ -1238,7 +1238,7 @@ function App() {
       setCount((prev) => prev + 1);
       setSpawns((prevSpawns) => prevSpawns.filter(spawn => spawn.id !== id));
     }, 1500);
-  }, [chantText, isMuted, soundInterval, customSoundInterval, soundType, language]);
+  }, [chantText, chantTextRaw, isMuted, soundInterval, customSoundInterval, soundType, language, soundSpeed]);
 
   const saveSession = useCallback(() => {
     if (count > 0 && user) {
