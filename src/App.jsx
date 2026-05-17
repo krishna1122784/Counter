@@ -152,6 +152,17 @@ const STANDARD_CHANTS = {
   mai: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय']
 };
 
+const RAW_CHANTS = {
+  'Radha Radha': 'radha radha',
+  'राधा राधा': 'radha radha',
+  'राम राम': 'ram ram',
+  'Ram Ram': 'ram ram',
+  'Hare Krishna': 'hare krishna',
+  'हरे कृष्ण': 'hare krishna',
+  'Om Namah Shivaya': 'om namah shivaya',
+  'ॐ नमः शिवाय': 'om namah shivaya'
+};
+
 const DEVOTIONAL_WORDS = {
   'radha': 'राधा',
   'radhe': 'राधे',
@@ -426,6 +437,11 @@ function App() {
     const savedLang = localStorage.getItem('jaap_language') || 'en';
     return STANDARD_CHANTS[savedLang] ? STANDARD_CHANTS[savedLang][0] : 'Radha Radha';
   });
+  const [chantTextRaw, setChantTextRaw] = useState(() => {
+    const savedLang = localStorage.getItem('jaap_language') || 'en';
+    const initialChant = STANDARD_CHANTS[savedLang] ? STANDARD_CHANTS[savedLang][0] : 'Radha Radha';
+    return RAW_CHANTS[initialChant] || 'radha radha';
+  });
   const [intervalSeconds, setIntervalSeconds] = useState(3);
   const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
 
@@ -481,29 +497,60 @@ function App() {
     if (index !== -1) {
       const standardListNew = STANDARD_CHANTS[newLang];
       if (standardListNew && standardListNew[index]) {
-        setChantText(standardListNew[index]);
+        const nextChant = standardListNew[index];
+        setChantText(nextChant);
+        setChantTextRaw(RAW_CHANTS[nextChant] || nextChant.toLowerCase());
       }
     }
   };
 
   const handleChantTextChange = (value) => {
-    if (language !== 'en') {
-      const transliterated = transliterateToDevanagari(value);
-      setChantText(transliterated);
-    } else {
+    if (language === 'en') {
       setChantText(value);
+      setChantTextRaw(value);
+      return;
+    }
+
+    if (value === '') {
+      setChantText('');
+      setChantTextRaw('');
+      return;
+    }
+
+    // Check if the input is purely Latin (e.g. copy-pasted or completely rewritten)
+    const isPureLatin = /^[a-zA-Z\s]*$/.test(value);
+    if (isPureLatin) {
+      setChantTextRaw(value);
+      setChantText(transliterateToDevanagari(value));
+      return;
+    }
+
+    // Otherwise, calculate character-by-character delta
+    if (value.length > chantText.length) {
+      const addedChar = value[value.length - 1];
+      const newRaw = chantTextRaw + addedChar;
+      setChantTextRaw(newRaw);
+      setChantText(transliterateToDevanagari(newRaw));
+    } else if (value.length < chantText.length) {
+      const newRaw = chantTextRaw.slice(0, -1);
+      setChantTextRaw(newRaw);
+      setChantText(transliterateToDevanagari(newRaw));
     }
   };
 
   const handleVirtualKeyPress = (key) => {
     if (key === 'SPACE') {
       setChantText(prev => prev + ' ');
+      setChantTextRaw(prev => prev + ' ');
     } else if (key === 'BACKSPACE') {
       setChantText(prev => prev.slice(0, -1));
+      setChantTextRaw(prev => prev.slice(0, -1));
     } else if (key === 'CLEAR') {
       setChantText('');
+      setChantTextRaw('');
     } else {
       setChantText(prev => prev + key);
+      setChantTextRaw(prev => prev + key);
     }
   };
 
@@ -648,6 +695,7 @@ function App() {
     setLoginUsername('');
     setLoginPassword('');
     setBackgrounds(INITIAL_BACKGROUNDS);
+    setChantTextRaw('radha radha');
   }, [saveSession]);
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 2));
@@ -751,7 +799,10 @@ function App() {
                   key={chant}
                   type="button"
                   className={`chant-pill ${chantText === chant ? 'active' : ''}`}
-                  onClick={() => setChantText(chant)}
+                  onClick={() => {
+                    setChantText(chant);
+                    setChantTextRaw(RAW_CHANTS[chant] || chant.toLowerCase());
+                  }}
                 >
                   {chant}
                 </button>
