@@ -722,7 +722,8 @@ if (typeof window !== 'undefined') {
 }
 
 // Helper to speak the chant using Web Speech API
-const speakChant = (text, langCode = 'hi', speed = 0.8) => {
+// rawText = romanized fallback (e.g. 'radha radha') used when no Hindi voice is installed
+const speakChant = (text, langCode = 'hi', speed = 0.8, rawText = '') => {
   try {
     if (!('speechSynthesis' in window)) return;
     
@@ -795,32 +796,47 @@ const speakChant = (text, langCode = 'hi', speed = 0.8) => {
         }
       }
     } else {
-      speakText = `${cleanText}.`;
+      // No Hindi voice pack installed — use the romanized rawText so the English TTS can
+      // actually pronounce it (Devanagari script fed to an English engine produces silence).
+      const fallback = rawText && rawText.trim() ? rawText.trim() : cleanText;
+      // Polish the fallback: ensure it's readable ASCII for English TTS
+      let fallbackClean = fallback
+        .replace(/radha/gi, 'Raadha')
+        .replace(/radhe/gi, 'Raadhey')
+        .replace(/krishna/gi, 'Krishna')
+        .replace(/ram/gi, 'Raam')
+        .replace(/shiva/gi, 'Shiva')
+        .replace(/hare/gi, 'Harey');
+      // Add comma pause between repeated words (e.g. 'Raadha Raadha' → 'Raadha, Raadha')
+      const fbWords = fallbackClean.split(/\s+/);
+      if (fbWords.length === 2 && fbWords[0].toLowerCase() === fbWords[1].toLowerCase()) {
+        fallbackClean = `${fbWords[0]}, ${fbWords[1]}`;
+      }
+      speakText = `${fallbackClean}.`;
       finalLang = 'en-US';
     }
     
     const utterance = new SpeechSynthesisUtterance(speakText);
     utterance.lang = finalLang;
-    utterance.rate = speed; // Slower, highly realistic and devotional pacing
-    utterance.pitch = 1.05; // Sweet, clear, warm devotional pitch
-    utterance.volume = 1.0; // Enforce maximum volume
+    utterance.rate = speed;
+    utterance.pitch = 1.05;
+    utterance.volume = 1.0;
     
-    // Find the premium voice
+    // Find the best available voice
     let voice = null;
     if (finalLang === 'hi-IN') {
-      // Prioritize Google Hindi, Microsoft Hemant (warm male), Kalpana (warm female), or high-quality local Hindi voices
       voice = voices.find(v => v.lang.startsWith('hi') && (v.name.includes('Google') || v.name.includes('Hemant') || v.name.includes('Kalpana') || v.name.includes('Natural')));
     } else {
       voice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Zira') || v.name.includes('David')));
     }
     if (!voice) {
-      voice = voices.find(v => v.lang.startsWith(finalLang) || v.lang === finalLang);
+      voice = voices.find(v => v.lang.startsWith(finalLang.split('-')[0]));
     }
     if (voice) {
       utterance.voice = voice;
     }
     
-    // Keep reference globally to completely prevent Chrome's premature garbage collection (and the resulting clipping pops)
+    // Keep reference globally to prevent Chrome's premature garbage collection
     window.activeSpeechUtterances.push(utterance);
     
     utterance.onend = () => {
@@ -830,11 +846,13 @@ const speakChant = (text, langCode = 'hi', speed = 0.8) => {
       window.activeSpeechUtterances = window.activeSpeechUtterances.filter(u => u !== utterance);
     };
     
-    // Cancel any current speaking, then trigger with a tiny 60ms delay
-    window.speechSynthesis.cancel();
+    // Only cancel if NOT currently speaking (avoid cutting off previous utterance in a tight loop)
+    if (!window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, 60);
+    }, 80);
   } catch (error) {
     console.warn("Failed to speak chant:", error);
   }
@@ -1108,6 +1126,15 @@ function App() {
     playTempleShankh();
     spawnFlowerRain();
 
+    // PRE-WARM speech synthesis: browsers silently drop the FIRST speak() call cold.
+    // Fire the chant immediately at start (300ms delay lets conch audio init first),
+    // so the engine is primed and beat-6 cycle never misses any subsequent chants.
+    if (!isMuted) {
+      setTimeout(() => {
+        speakChant(chantText, language, soundSpeed, chantTextRaw);
+      }, 300);
+    }
+
     let beatCounter = 0;
     const interval = setInterval(() => {
       const beat = beatCounter % 8;
@@ -1142,7 +1169,8 @@ function App() {
         setTimeout(() => setKirtanClapPulsing(false), 200);
       } else if (beat === 6) {
         if (!isMuted) {
-          speakChant(chantText, language, soundSpeed);
+          // Pass chantTextRaw as romanized fallback so English TTS always has readable text
+          speakChant(chantText, language, soundSpeed, chantTextRaw);
         }
         setKirtanCount(prev => prev + 1);
       }
@@ -1156,7 +1184,7 @@ function App() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [kirtanActive, chantText, language, soundSpeed, isMuted, devotionMode]);
+  }, [kirtanActive, chantText, chantTextRaw, language, soundSpeed, isMuted, devotionMode]);
 
   useEffect(() => {
     const texts = Array.from({ length: 15 }).map((_, i) => ({
