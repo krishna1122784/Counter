@@ -741,5 +741,60 @@
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
 }
 
+/* Sound & Chant Settings Modal styling */
+.sound-settings-modal {
+  max-width: 480px;
+  background: rgba(18, 18, 24, 0.96);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.sound-setting-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin: 10px 0;
+  transition: all 0.3s ease;
+}
+
+.sound-setting-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.sound-setting-block {
+  margin: 20px 0;
+  text-align: left;
+}
+
+.sound-quick-toggle {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  width: 36px;
+  height: 36px;
+  padding: 0 !important;
+}
+
+.sound-quick-toggle.muted {
+  background: rgba(255, 75, 43, 0.15) !important;
+  border-color: #ff4b2b !important;
+  color: #ff4b2b !important;
+}
+
+.sound-quick-toggle.unmuted {
+  background: rgba(56, 239, 125, 0.15) !important;
+  border-color: #38ef7d !important;
+  color: #38ef7d !important;
+  box-shadow: 0 0 8px rgba(56, 239, 125, 0.3);
+}
+
+.sound-quick-toggle:hover {
+  transform: scale(1.1);
+}
+
 
 
