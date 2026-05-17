@@ -142,6 +142,39 @@ const TRANSLATIONS = {
     errEmptyFields: "कृपया उपयोगकर्ता नाम और पासवर्ड दोनों दर्ज करू",
     errInvalidCreds: "अमान्य क्रेडेंशियल",
     errUserExists: "उपयोगकर्ता नाम पहले सँ मौजूद अछि"
+  },
+  bho: {
+    loginTitle: "भक्ति में लॉगिन करीं",
+    registerTitle: "खाता बनाईं",
+    username: "उपयोगकर्ता के नाम",
+    password: "पासवर्ड",
+    loginBtn: "लॉगिन करीं",
+    registerBtn: "रजिस्टर करीं",
+    needAccount: "खाता नईखे? एहिजा रजिस्टर करीं",
+    haveAccount: "पहले से खाता बा? लॉगिन करीं",
+    configureJaap: "अपन जाप कॉन्फ़िगर करीं",
+    nameOfJaap: "जाप के नाम",
+    egChant: "जैसे: राधा राधा",
+    timingInterval: "समय अंतराल",
+    startDevotion: "भक्ति शुरू करीं",
+    chantCount: "जाप संख्या",
+    manualChant: "मैनुअल जाप",
+    startAuto: "ऑटो शुरू करीं",
+    stopAuto: "ऑटो रोकीं",
+    resetCount: "संख्या रीसेट करीं",
+    uploadBg: "बैकग्राउंड अपलोड करीं",
+    history: "इतिहास",
+    logout: "लॉगआउट करीं",
+    jaapHistory: "जाप के इतिहास",
+    noHistory: "कोनो इतिहास नईखे मिलल। अपन भक्ति शुरू करीं!",
+    clearHistory: "इतिहास साफ़ करीं",
+    chanted: "जाप कइलीं",
+    times: "बेर",
+    greeting: "प्रणाम",
+    sec: "सेकंड",
+    errEmptyFields: "कृपया उपयोगकर्ता नाम अउरी पासवर्ड दुनो दर्ज करीं",
+    errInvalidCreds: "अमान्य क्रेडेंशियल",
+    errUserExists: "उपयोगकर्ता नाम पहले से मौजूद बा"
   }
 };
 
@@ -149,7 +182,8 @@ const STANDARD_CHANTS = {
   en: ['Radha Radha', 'Ram Ram', 'Hare Krishna', 'Om Namah Shivaya'],
   hi: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय'],
   sa: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय'],
-  mai: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय']
+  mai: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय'],
+  bho: ['राधा राधा', 'राम राम', 'हरे कृष्ण', 'ॐ नमः शिवाय']
 };
 
 const RAW_CHANTS = {
@@ -361,6 +395,7 @@ const LanguageSelector = ({ currentLang, onChange }) => {
       <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
       <option value="sa">🇮🇳 संस्कृतम् (Sanskrit)</option>
       <option value="mai">🇮🇳 मैथिली (Maithili)</option>
+      <option value="bho">🇮🇳 भोजपुरी (Bhojpuri)</option>
     </select>
   );
 };
