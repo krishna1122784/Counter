@@ -1097,7 +1097,7 @@ function App() {
 
   // Kirtan Loop Rhythmic Scheduler
   useEffect(() => {
-    if (!kirtanActive) {
+    if (!kirtanActive || devotionMode !== 'kirtan') {
       setKirtanBeat(0);
       setKirtanBellsRinging(false);
       setKirtanClapPulsing(false);
@@ -1115,6 +1115,11 @@ function App() {
       
       if (beat === 0 && Math.random() > 0.4) {
         spawnFlowerRain();
+      }
+
+      // Auto blow conch shell every 40 beats (24 seconds) during active kirtan to keep it divine
+      if (beatCounter > 0 && beatCounter % 40 === 0) {
+        playTempleShankh();
       }
 
       // RHYTHMIC INSTRUMENT SCHEDULER:
@@ -1145,8 +1150,13 @@ function App() {
       beatCounter++;
     }, 600); // 600ms beat (~100 BPM rhythm)
 
-    return () => clearInterval(interval);
-  }, [kirtanActive, chantText, language, soundSpeed, isMuted]);
+    return () => {
+      clearInterval(interval);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [kirtanActive, chantText, language, soundSpeed, isMuted, devotionMode]);
 
   useEffect(() => {
     const texts = Array.from({ length: 15 }).map((_, i) => ({
@@ -1563,8 +1573,8 @@ function App() {
               >
                 {isMuted ? '🔇' : '🔊'}
               </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => setDevotionMode('standard')}>📿 {language === 'hi' ? 'जाप काउंटर' : 'Counter Mode'}</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => setDevotionMode(null)}>🔄 {language === 'hi' ? 'पद्धति बदलें' : 'Change Mode'}</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setDevotionMode('standard'); setKirtanActive(false); }}>📿 {language === 'hi' ? 'जाप काउंटर' : 'Counter Mode'}</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setDevotionMode(null); setKirtanActive(false); }}>🔄 {language === 'hi' ? 'पद्धति बदलें' : 'Change Mode'}</button>
               <button className="btn btn-stop btn-sm" onClick={handleLogout}>🚪 {TRANSLATIONS[language].logout}</button>
             </div>
           </div>
