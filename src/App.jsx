@@ -721,140 +721,125 @@ if (typeof window !== 'undefined') {
   window.activeSpeechUtterances = window.activeSpeechUtterances || [];
 }
 
+// Cache voices at module level using voiceschanged event.
+// CRITICAL: getVoices() returns [] when called inside setInterval (voices load async in Chrome).
+// We must pre-cache them so speakChant always has voices available.
+let cachedVoices = [];
+const refreshVoices = () => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  const v = window.speechSynthesis.getVoices();
+  if (v && v.length > 0) cachedVoices = v;
+};
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  refreshVoices();
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+}
+
 // Helper to speak the chant using Web Speech API
-// rawText = romanized fallback (e.g. 'radha radha') used when no Hindi voice is installed
+// rawText = romanized ASCII fallback (e.g. 'radha radha') used when no Hindi voice pack is installed
 const speakChant = (text, langCode = 'hi', speed = 0.8, rawText = '') => {
   try {
     if (!('speechSynthesis' in window)) return;
-    
-    // Clean up and optimize text for beautiful devotional pronunciation
-    let cleanText = text.trim();
-    
-    // Replace abbreviated endings to full devotional words so the synthesizer pronounces them fully
-    cleanText = cleanText.replace(/\bradh\b/gi, 'Radha');
-    cleanText = cleanText.replace(/\bram\b/gi, 'Ram');
-    cleanText = cleanText.replace(/\bkrishn\b/gi, 'Krishna');
-    
-    // Add a natural, graceful pause between repeated devotional words so they are pronounced fully and separately
-    if (cleanText.toLowerCase().includes('radha radha')) {
-      cleanText = cleanText.replace(/radha\s+radha/gi, 'Radha, Radha');
-    } else if (cleanText.toLowerCase().includes('ram ram')) {
-      cleanText = cleanText.replace(/ram\s+ram/gi, 'Ram, Ram');
-    } else if (cleanText.toLowerCase().includes('krishna krishna')) {
-      cleanText = cleanText.replace(/krishna\s+krishna/gi, 'Krishna, Krishna');
-    } else if (cleanText.toLowerCase().includes('radhe radhe')) {
-      cleanText = cleanText.replace(/radhe\s+radhe/gi, 'Radhe, Radhe');
-    } else {
-      // General duplicate word comma insert
-      const words = cleanText.split(/\s+/);
-      if (words.length === 2 && words[0].toLowerCase() === words[1].toLowerCase()) {
-        cleanText = `${words[0]}, ${words[1]}`;
-      }
-    }
-    
-    // Map application language to speech BCP 47 language code
-    const voiceLang = langCode === 'hi' ? 'hi-IN' : 
-                      langCode === 'sa' ? 'hi-IN' : 
-                      langCode === 'mai' ? 'hi-IN' :
-                      langCode === 'bho' ? 'hi-IN' : 'en-US';
-                      
-    const voices = window.speechSynthesis.getVoices();
-    const hasHindiVoice = voices.some(v => v.lang.startsWith('hi') || v.lang === 'hi-IN');
-    
-    // NATIVE DEVOTIONAL VOICE ENHANCEMENT WITH ACCENT FALLBACK:
-    // If speaking in a Hindi-aligned voice AND the system actually has a Hindi voice pack,
-    // convert the clean English text to Devanagari.
-    // Otherwise, use English text to ensure standard OS fallback voice can read it beautifully without silence!
-    let speakText = cleanText;
+
+    // Refresh voices in case they weren't loaded yet
+    if (cachedVoices.length === 0) refreshVoices();
+    const voices = cachedVoices;
+
+    // Map app language to BCP-47 code
+    const voiceLang = (langCode === 'hi' || langCode === 'sa' || langCode === 'mai' || langCode === 'bho')
+      ? 'hi-IN' : 'en-US';
+
+    const hasHindiVoice = voices.some(v => v.lang && (v.lang.startsWith('hi') || v.lang === 'hi-IN'));
+
+    // Build the text to speak
+    let speakText = '';
     let finalLang = voiceLang;
-    
+
     if (voiceLang === 'hi-IN' && hasHindiVoice) {
+      // Use Devanagari for a proper Hindi TTS accent
       const devanagariMaps = {
-        'radha, radha': 'राधा, राधा।',
         'radha radha': 'राधा, राधा।',
-        'radhe, radhe': 'राधे, राधे।',
         'radhe radhe': 'राधे, राधे।',
-        'ram, ram': 'राम, राम।',
-        'ram ram': 'राम, राम।',
-        'hare krishna': 'हरे कृष्ण।',
+        'ram ram':     'राम, राम।',
+        'hare krishna':'हरे कृष्ण।',
         'om namah shivaya': 'ॐ नमः शिवाय।'
       };
-      
-      const lower = cleanText.toLowerCase();
+      const lower = (rawText || text).toLowerCase().trim();
       if (devanagariMaps[lower]) {
         speakText = devanagariMaps[lower];
       } else {
-        // Fallback: transliterate on the fly and add a trailing Devanagari full stop (।) for a smooth breath taper
-        const devanagari = transliterateToDevanagari(cleanText);
-        if (devanagari) {
-          const devWords = devanagari.split(/\s+/);
-          if (devWords.length === 2 && devWords[0] === devWords[1]) {
-            speakText = `${devWords[0]}, ${devWords[1]}।`;
-          } else {
-            speakText = `${devanagari}।`;
-          }
+        // Try Devanagari from text directly
+        const t = text.trim();
+        const words = t.split(/\s+/);
+        if (words.length === 2 && words[0] === words[1]) {
+          speakText = `${words[0]}, ${words[1]}।`;
+        } else {
+          speakText = `${t}।`;
         }
       }
     } else {
-      // No Hindi voice pack installed — use the romanized rawText so the English TTS can
-      // actually pronounce it (Devanagari script fed to an English engine produces silence).
-      const fallback = rawText && rawText.trim() ? rawText.trim() : cleanText;
-      // Polish the fallback: ensure it's readable ASCII for English TTS
-      let fallbackClean = fallback
-        .replace(/radha/gi, 'Raadha')
-        .replace(/radhe/gi, 'Raadhey')
-        .replace(/krishna/gi, 'Krishna')
-        .replace(/ram/gi, 'Raam')
-        .replace(/shiva/gi, 'Shiva')
-        .replace(/hare/gi, 'Harey');
-      // Add comma pause between repeated words (e.g. 'Raadha Raadha' → 'Raadha, Raadha')
-      const fbWords = fallbackClean.split(/\s+/);
-      if (fbWords.length === 2 && fbWords[0].toLowerCase() === fbWords[1].toLowerCase()) {
-        fallbackClean = `${fbWords[0]}, ${fbWords[1]}`;
+      // NO Hindi voice pack — use romanized rawText so English TTS can read it
+      // Devanagari fed to English TTS = complete silence
+      const base = (rawText && rawText.trim()) ? rawText.trim() : text.replace(/[\u0900-\u097F]/g, '').trim() || 'Om';
+      // Devotional phonetic spelling for natural English pronunciation
+      let fb = base
+        .replace(/\bradha\b/gi, 'Raadha')
+        .replace(/\bradhe\b/gi, 'Raadhey')
+        .replace(/\bkrishna\b/gi, 'Krishnaa')
+        .replace(/\bram\b/gi,    'Raam')
+        .replace(/\bhare\b/gi,   'Harey')
+        .replace(/\bshiva\b/gi,  'Shivaa')
+        .replace(/\bom\b/gi,     'Ohm');
+      // Insert comma pause between two identical repeated words
+      const fbW = fb.split(/\s+/);
+      if (fbW.length === 2 && fbW[0].toLowerCase() === fbW[1].toLowerCase()) {
+        fb = `${fbW[0]}, ${fbW[1]}`;
       }
-      speakText = `${fallbackClean}.`;
+      speakText = `${fb}.`;
       finalLang = 'en-US';
     }
-    
+
+    // Pick the best available voice
+    let voice = null;
+    if (finalLang === 'hi-IN') {
+      voice = voices.find(v => v.lang && v.lang.startsWith('hi') &&
+        (v.name.includes('Google') || v.name.includes('Hemant') ||
+         v.name.includes('Kalpana') || v.name.includes('Natural')));
+      if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith('hi'));
+    } else {
+      voice = voices.find(v => v.lang && v.lang.startsWith('en') &&
+        (v.name.includes('Natural') || v.name.includes('Google') ||
+         v.name.includes('Zira') || v.name.includes('David')));
+      if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith('en'));
+    }
+
     const utterance = new SpeechSynthesisUtterance(speakText);
     utterance.lang = finalLang;
     utterance.rate = speed;
     utterance.pitch = 1.05;
     utterance.volume = 1.0;
-    
-    // Find the best available voice
-    let voice = null;
-    if (finalLang === 'hi-IN') {
-      voice = voices.find(v => v.lang.startsWith('hi') && (v.name.includes('Google') || v.name.includes('Hemant') || v.name.includes('Kalpana') || v.name.includes('Natural')));
-    } else {
-      voice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Zira') || v.name.includes('David')));
-    }
-    if (!voice) {
-      voice = voices.find(v => v.lang.startsWith(finalLang.split('-')[0]));
-    }
-    if (voice) {
-      utterance.voice = voice;
-    }
-    
-    // Keep reference globally to prevent Chrome's premature garbage collection
+    if (voice) utterance.voice = voice;
+
+    // Keep global reference to prevent Chrome GC clipping
     window.activeSpeechUtterances.push(utterance);
-    
     utterance.onend = () => {
       window.activeSpeechUtterances = window.activeSpeechUtterances.filter(u => u !== utterance);
     };
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn('SpeechSynthesis error:', e.error, '| text:', speakText);
       window.activeSpeechUtterances = window.activeSpeechUtterances.filter(u => u !== utterance);
     };
-    
-    // Only cancel if NOT currently speaking (avoid cutting off previous utterance in a tight loop)
-    if (!window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-    }
+
+    // ALWAYS cancel before speaking — Chrome has a bug where speaking stays stuck as
+    // true indefinitely, silently blocking all future utterances. Cancel clears the queue.
+    window.speechSynthesis.cancel();
+    // 150ms settle window: gives cancel time to flush AND lets Web Audio bell sounds
+    // start their decay before speech synthesis requests the audio session.
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, 80);
+    }, 150);
   } catch (error) {
-    console.warn("Failed to speak chant:", error);
+    console.warn('speakChant error:', error);
   }
 };
 
