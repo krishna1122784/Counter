@@ -533,6 +533,142 @@ const fileToDataUrl = (file) => {
 // which completely halts Web Audio playback after several manual chants.
 let globalAudioContext = null;
 
+// Synthesize a holy conch shell (Shankh) blow using harmonic sine oscillators, frequency modulation, and breathy wind filtering.
+const playTempleShankh = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    
+    if (!globalAudioContext) {
+      globalAudioContext = new AudioContext();
+    }
+    if (globalAudioContext.state === 'suspended') {
+      globalAudioContext.resume();
+    }
+    
+    const ctx = globalAudioContext;
+    const now = ctx.currentTime;
+    const duration = 4.0;
+    
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.linearRampToValueAtTime(0.8, now + 0.8);
+    masterGain.gain.setValueAtTime(0.8, now + duration - 1.2);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    masterGain.connect(ctx.destination);
+    
+    const bufferSize = ctx.sampleRate * duration;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(290, now);
+    noiseFilter.Q.setValueAtTime(8, now);
+    
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.08, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(masterGain);
+    
+    const baseFreq = 220;
+    const partials = [1, 1.5, 2, 2.5, 3, 4];
+    const partialGains = [0.4, 0.25, 0.3, 0.15, 0.1, 0.05];
+    
+    const lfo = ctx.createOscillator();
+    lfo.frequency.setValueAtTime(6, now);
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.setValueAtTime(4, now);
+    lfo.connect(lfoGain);
+    lfo.start(now);
+    
+    partials.forEach((mult, i) => {
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      
+      osc.type = 'sine';
+      const freqParam = osc.frequency;
+      freqParam.setValueAtTime(baseFreq * mult, now);
+      freqParam.linearRampToValueAtTime((baseFreq + 35) * mult, now + 0.8);
+      freqParam.setValueAtTime((baseFreq + 35) * mult, now + duration - 1.2);
+      freqParam.linearRampToValueAtTime((baseFreq - 15) * mult, now + duration);
+      
+      lfoGain.connect(freqParam);
+      oscGain.gain.setValueAtTime(partialGains[i], now);
+      
+      osc.connect(oscGain);
+      oscGain.connect(masterGain);
+      
+      osc.start(now);
+      osc.stop(now + duration);
+    });
+    
+    noiseSource.start(now);
+    noiseSource.stop(now + duration);
+  } catch (error) {
+    console.warn("Failed to play temple shankh:", error);
+  }
+};
+
+// Synthesize a collective temple handclap using bandpass-filtered noise bursts with micro-timing offsets.
+const playTempleClap = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    
+    if (!globalAudioContext) {
+      globalAudioContext = new AudioContext();
+    }
+    if (globalAudioContext.state === 'suspended') {
+      globalAudioContext.resume();
+    }
+    
+    const ctx = globalAudioContext;
+    const devotees = 3;
+    const now = ctx.currentTime;
+    
+    for (let d = 0; d < devotees; d++) {
+      const clapTime = now + (d * 0.012) + (Math.random() * 0.01);
+      const clapDuration = 0.08;
+      const bufferSize = ctx.sampleRate * clapDuration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100 + (Math.random() * 200), clapTime);
+      filter.Q.setValueAtTime(3.5, clapTime);
+      
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.4, clapTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, clapTime + clapDuration);
+      
+      source.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      source.start(clapTime);
+      source.stop(clapTime + clapDuration);
+    }
+  } catch (error) {
+    console.warn("Failed to play temple clap:", error);
+  }
+};
+
 // Helper to play temple bell sound using Web Audio API
 const playTempleBell = () => {
   try {
@@ -757,6 +893,15 @@ function App() {
     return saved ? parseFloat(saved) : 0.8;
   });
 
+  // Immersive Temple Kirtan Mode States
+  const [devotionMode, setDevotionMode] = useState(null); // 'standard', 'kirtan', or null
+  const [kirtanActive, setKirtanActive] = useState(false);
+  const [kirtanBeat, setKirtanBeat] = useState(0);
+  const [kirtanCount, setKirtanCount] = useState(0);
+  const [kirtanBellsRinging, setKirtanBellsRinging] = useState(false);
+  const [kirtanClapPulsing, setKirtanClapPulsing] = useState(false);
+  const [flowerRain, setFlowerRain] = useState([]);
+
   useEffect(() => {
     localStorage.setItem('jaap_sound_speed', soundSpeed.toString());
   }, [soundSpeed]);
@@ -932,6 +1077,77 @@ function App() {
     }
   };
 
+  // Helper to spawn elegant flower petals raining down dynamically
+  const spawnFlowerRain = () => {
+    const emojis = ['🌹', '🪷', '🌸', '🍃', '🌺', '🌿'];
+    const newFlowers = Array.from({ length: 15 }).map((_, i) => ({
+      id: `flower-${Date.now()}-${i}-${Math.random()}`,
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${3 + Math.random() * 3}s`,
+      animationDelay: `${Math.random() * 1.5}s`,
+      fontSize: `${1.2 + Math.random() * 1.5}rem`
+    }));
+    setFlowerRain(prev => [...prev, ...newFlowers]);
+    
+    setTimeout(() => {
+      setFlowerRain(prev => prev.filter(f => !newFlowers.some(nf => nf.id === f.id)));
+    }, 6000);
+  };
+
+  // Kirtan Loop Rhythmic Scheduler
+  useEffect(() => {
+    if (!kirtanActive) {
+      setKirtanBeat(0);
+      setKirtanBellsRinging(false);
+      setKirtanClapPulsing(false);
+      return;
+    }
+
+    // Auto blow sacred conch shell at the very start of Kirtan!
+    playTempleShankh();
+    spawnFlowerRain();
+
+    let beatCounter = 0;
+    const interval = setInterval(() => {
+      const beat = beatCounter % 8;
+      setKirtanBeat(beat);
+      
+      if (beat === 0 && Math.random() > 0.4) {
+        spawnFlowerRain();
+      }
+
+      // RHYTHMIC INSTRUMENT SCHEDULER:
+      // Beat 0 & 3: Ring Bell + Clap
+      // Beat 1 & 4: Clap
+      // Beat 2 & 5: Meditative silence (let ring out)
+      // Beat 6 & 7: Call-and-response Vocal Speech Chant
+      if (beat === 0 || beat === 3) {
+        playTempleBell();
+        playTempleClap();
+        setKirtanBellsRinging(true);
+        setKirtanClapPulsing(true);
+        setTimeout(() => {
+          setKirtanBellsRinging(false);
+          setKirtanClapPulsing(false);
+        }, 250);
+      } else if (beat === 1 || beat === 4) {
+        playTempleClap();
+        setKirtanClapPulsing(true);
+        setTimeout(() => setKirtanClapPulsing(false), 200);
+      } else if (beat === 6) {
+        if (!isMuted) {
+          speakChant(chantText, language, soundSpeed);
+        }
+        setKirtanCount(prev => prev + 1);
+      }
+
+      beatCounter++;
+    }, 600); // 600ms beat (~100 BPM rhythm)
+
+    return () => clearInterval(interval);
+  }, [kirtanActive, chantText, language, soundSpeed, isMuted]);
+
   useEffect(() => {
     const texts = Array.from({ length: 15 }).map((_, i) => ({
       id: `bg-text-${i}`,
@@ -1027,6 +1243,9 @@ function App() {
     setCount(0);
     setAutoMode(false);
     setIsSetupComplete(false);
+    setDevotionMode(null);
+    setKirtanActive(false);
+    setKirtanCount(0);
     setUser(null);
     setLoginUsername('');
     setLoginPassword('');
@@ -1203,6 +1422,208 @@ function App() {
           <button className="btn btn-start setup-start-btn" onClick={() => setIsSetupComplete(true)}>
             {TRANSLATIONS[language].startDevotion}
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Mode Selection Panel (Choose between Meditative Counter and Immersive Temple Kirtan)
+  if (isSetupComplete && devotionMode === null) {
+    return (
+      <div className="app-container setup-screen">
+        <div className="background-container">
+          <img src={backgrounds[0] || INITIAL_BACKGROUNDS[0]} alt="Background" className="bg-image active" style={{filter: 'brightness(0.2)'}} />
+        </div>
+        
+        <div className="mode-selection-container">
+          <h1 style={{ color: '#ffd700', textShadow: '0 0 15px rgba(255,215,0,0.4)', fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>
+            {language === 'hi' ? 'अपनी साधना पद्धति चुनें' : 
+             language === 'sa' ? 'स्वकीयां साधनापद्धतिं चिनोतु' : 
+             language === 'mai' ? 'अपन साधना पद्धति चुनू' : 
+             language === 'bho' ? 'अपन साधना पद्धति चुनीं' : 'Choose Your Sadhana Mode'}
+          </h1>
+          <p style={{ color: '#ddd', fontSize: '1.2rem', marginBottom: '30px', textAlign: 'center' }}>
+            {language === 'hi' ? 'हरे कृष्णा! नाम सुमिरन की पावन पद्धति का चयन करें' : 
+             language === 'sa' ? 'हरे कृष्ण! नामस्मरणस्य पवित्रमार्गं चिनोतु' : 
+             language === 'mai' ? 'हरे कृष्णा! नाम सुमिरन क पावन पद्धति चुनू' : 
+             language === 'bho' ? 'हरे कृष्णा! नाम सुमिरन के पावन पद्धति चुनीं' : 'Hare Krishna! Select your sacred name remembrance practice'}
+          </p>
+          
+          <div className="mode-card-wrapper">
+            {/* Meditative Counter Card */}
+            <div className="mode-selection-card" onClick={() => setDevotionMode('standard')}>
+              <div className="mode-icon">📿</div>
+              <h2 className="mode-title">
+                {language === 'hi' ? 'अविरल नाम जाप (Counter Mode)' : 
+                 language === 'sa' ? 'नामस्मरणम् (Counter)' : 
+                 language === 'mai' ? 'अविरल नाम जाप (Counter)' : 
+                 language === 'bho' ? 'अविरल नाम जाप (Counter)' : 'Meditative Jaap (Counter)'}
+              </h2>
+              <p className="mode-description">
+                {language === 'hi' ? 'शान्त मन से एकाग्र होकर माला फेरें, मंत्र जप की संख्या गिनें और दिव्य स्तुति का अनुभव करें।' : 
+                 language === 'sa' ? 'शान्तमनसा एकाग्रचित्तेन मन्त्रजापसंख्यां गणयतु दिव्यस्मरणं च करोतु।' : 
+                 language === 'mai' ? 'शान्त मन सँ एकाग्र भऽ मंत्र जप क संख्या गिनू आ दिव्य सुमिरन क अनुभव करू।' : 
+                 language === 'bho' ? 'शान्त मन से एकाग्र होके मंत्र जप के संख्या गिनीं अउरी दिव्य सुमिरन के अनुभव करीं।' : 'Silently count your chants, follow a meditative background slide-show, and practice focused mantra devotion.'}
+              </p>
+              <button className="btn btn-start w-100" style={{ pointerEvents: 'none' }}>
+                {language === 'hi' ? 'जाप आरम्भ करें' : 'Start Chanting'}
+              </button>
+            </div>
+            
+            {/* Temple Kirtan Card */}
+            <div className="mode-selection-card" onClick={() => { setDevotionMode('kirtan'); setKirtanActive(true); }}>
+              <div className="mode-icon">🥁</div>
+              <h2 className="mode-title">
+                {language === 'hi' ? 'सामूहिक मंदिर कीर्तन (Kirtan Mode)' : 
+                 language === 'sa' ? 'मन्दिरसङ्कीर्तनम् (Kirtan)' : 
+                 language === 'mai' ? 'सामूहिक मंदिर कीर्तन (Kirtan)' : 
+                 language === 'bho' ? 'सामूहिक मंदिर कीर्तन (Kirtan)' : 'Temple Kirtan (Immersive)'}
+              </h2>
+              <p className="mode-description">
+                {language === 'hi' ? 'मंदिर जैसा भव्य उत्सव! तालियों की थाप, शंखनाद, गूंजती घंटियों और सुरमयी कीर्तन वाणी के साथ कीर्तन में मग्न हो जाएं।' : 
+                 language === 'sa' ? 'भव्यं मन्दिरोत्सवम्! करतलध्वनिः, शङ्खनादः, मन्दिरघण्टाः सुरमयसङ्कीर्तनं च मग्नं भवन्तु।' : 
+                 language === 'mai' ? 'मंदिर जकाँ भव्य उत्सव! तालीक थाप, शंखनाद, गूँजैत घंटी आ सुरमयी कीर्तन वाणीक संग मग्न भऽ जाऊ।' : 
+                 language === 'bho' ? 'मंदिर जइसन भव्य उत्सव! ताली के थाप, शंखनाद, गूँजत घंटी अउरी सुरमयी कीर्तन वाणी के साथ मग्न हो जाईं।' : 'Step into a lively temple festival! Chant with automated rhythmic handclapping, ringing temple bells, sacred conch shell blows, and beautiful collective kirtan animations.'}
+              </p>
+              <button className="btn btn-primary w-100" style={{ pointerEvents: 'none' }}>
+                {language === 'hi' ? 'कीर्तन में मग्न हों' : 'Enter Kirtan'}
+              </button>
+            </div>
+          </div>
+          
+          <button 
+            className="btn btn-secondary" 
+            style={{ marginTop: '40px', padding: '10px 20px' }} 
+            onClick={() => setIsSetupComplete(false)}
+          >
+            ↩️ {language === 'hi' ? 'जाप का नाम/समय बदलें' : 'Change Setup'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Immersive Temple Kirtan Mode Visual Screen
+  if (devotionMode === 'kirtan') {
+    return (
+      <div className="app-container kirtan-dashboard">
+        {/* Divine falling flower pedals layer */}
+        {flowerRain.map(f => (
+          <span 
+            key={f.id} 
+            className="flower-rain-particle" 
+            style={{ left: f.left, animationDuration: f.animationDuration, animationDelay: f.animationDelay, fontSize: f.fontSize }}
+          >
+            {f.emoji}
+          </span>
+        ))}
+
+        <div className="background-container">
+          <img src={backgrounds[bgIndex] || INITIAL_BACKGROUNDS[0]} alt="Background" className="bg-image active" style={{ filter: 'brightness(0.2)' }} />
+        </div>
+
+        {/* Swaying Temple Bells */}
+        <div 
+          className={`kirtan-bell-hanger kirtan-bell-left ${kirtanBellsRinging ? 'active-ringing' : ''}`}
+          onClick={() => { playTempleBell(); }}
+        >
+          <div className="kirtan-chain"></div>
+          <div className="kirtan-bell-body">🔔</div>
+        </div>
+
+        <div 
+          className={`kirtan-bell-hanger kirtan-bell-right ${kirtanBellsRinging ? 'active-ringing' : ''}`}
+          onClick={() => { playTempleBell(); }}
+        >
+          <div className="kirtan-chain"></div>
+          <div className="kirtan-bell-body">🔔</div>
+        </div>
+
+        {/* Sacred Conch Shankh blow trigger */}
+        <div className="kirtan-shankh-container" onClick={playTempleShankh} title="Blow Sacred Shankh">
+          <div className="kirtan-shankh-icon">🐚</div>
+          <span className="kirtan-shankh-label">{language === 'hi' ? 'शंखनाद' : 'Blow Shankh'}</span>
+        </div>
+
+        {/* Rhythmic Clapping trigger */}
+        <div className={`clap-overlay-visual ${kirtanClapPulsing ? 'pulsing' : ''}`} onClick={playTempleClap} title="Clap Rhythms">
+          <div className="clap-emoji">👏</div>
+          <span className="kirtan-shankh-label" style={{ color: '#ff4b2b' }}>{language === 'hi' ? 'कीर्तन ताली' : 'Clap'}</span>
+        </div>
+
+        <div className="kirtan-main-container">
+          {/* Top Bar controls */}
+          <div className="top-bar" style={{ zoom: zoomLevel }}>
+            <div className="user-greeting">🕌 {language === 'hi' ? 'सामूहिक संकीर्तन' : 'Temple Kirtan'}, {user.username}</div>
+            <div className="top-controls">
+              <button 
+                className={`btn btn-secondary btn-sm sound-quick-toggle ${isMuted ? 'muted' : 'unmuted'}`}
+                onClick={() => setIsMuted(prev => !prev)}
+                title={isMuted ? TRANSLATIONS[language].unmuteSound : TRANSLATIONS[language].muteSound}
+              >
+                {isMuted ? '🔇' : '🔊'}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setDevotionMode('standard')}>📿 {language === 'hi' ? 'जाप काउंटर' : 'Counter Mode'}</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setDevotionMode(null)}>🔄 {language === 'hi' ? 'पद्धति बदलें' : 'Change Mode'}</button>
+              <button className="btn btn-stop btn-sm" onClick={handleLogout}>🚪 {TRANSLATIONS[language].logout}</button>
+            </div>
+          </div>
+
+          {/* Central Pulsing Kirtan Board */}
+          <div className={`kirtan-board ${kirtanActive ? 'pulsing' : ''}`} style={{ zoom: zoomLevel }}>
+            <span style={{ fontSize: '1.2rem', color: '#ffd700', textTransform: 'uppercase', letterSpacing: '3px', marginBottom: '10px', display: 'block', fontWeight: 'bold' }}>
+              {language === 'hi' ? '🌸 नाम संकीर्तन 🌸' : '🌸 Sacred Chanting 🌸'}
+            </span>
+            <h1 className="kirtan-large-text">
+              {chantText || 'Radha Radha'}
+            </h1>
+            
+            <p style={{ color: '#aaa', fontSize: '1.1rem', fontStyle: 'italic', margin: '5px 0' }}>
+              {language === 'hi' ? 'तालियों, घंटी और शंखनाद के साथ मंदिर कीर्तन का आनंद लें' : 'Immerse in clapping, bells, and conch rhythms'}
+            </p>
+
+            {/* Rhythmic beat indicators */}
+            <div className="kirtan-beats-glow">
+              {Array.from({ length: 8 }).map((_, index) => {
+                const isActive = kirtanBeat === index && kirtanActive;
+                const isClapBeat = index === 0 || index === 1 || index === 3 || index === 4;
+                return (
+                  <div 
+                    key={index} 
+                    className={`beat-dot ${isActive ? (isClapBeat ? 'clap-active' : 'active') : ''}`}
+                    style={{ opacity: isActive ? 1 : 0.4 }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom stats box and action row */}
+          <div className="ui-bottom" style={{ zoom: zoomLevel }}>
+            <div className="controls-box" style={{ margin: '0 auto 20px auto', display: 'flex', gap: '20px', justifyContent: 'center' }}>
+              <button 
+                className={`btn ${kirtanActive ? 'btn-stop' : 'btn-start'}`} 
+                onClick={() => setKirtanActive(!kirtanActive)}
+                style={{ minWidth: '240px', fontSize: '1.2rem', padding: '14px 28px' }}
+              >
+                {kirtanActive ? '⏸️ Pause Kirtan' : '▶️ Start Lively Kirtan'}
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={playTempleShankh}
+                style={{ padding: '14px 24px' }}
+              >
+                🐚 Blow Shankh
+              </button>
+            </div>
+
+            <div className="counter-box" style={{ background: 'rgba(18, 18, 24, 0.75)', border: '1px solid rgba(255, 215, 0, 0.3)', minWidth: '240px' }}>
+              <div className="counter-title" style={{ color: '#ffd700' }}>
+                {language === 'hi' ? 'गाए गए श्लोक' : 'Kirtan Lines Sung'}
+              </div>
+              <h1 className="counter-value" style={{ textShadow: '0 0 10px rgba(255,215,0,0.5)' }}>{kirtanCount}</h1>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -796,5 +796,327 @@
   transform: scale(1.1);
 }
 
+/* Mode Selection Layout */
+.mode-selection-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  color: white;
+  z-index: 10;
+  position: relative;
+}
+
+.mode-card-wrapper {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1000px;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.mode-selection-card {
+  flex: 1 1 350px;
+  max-width: 450px;
+  background: rgba(18, 18, 24, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 24px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 15px rgba(255, 215, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-selection-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #ffd700, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mode-selection-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(255, 215, 0, 0.7);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.7), 0 0 30px rgba(255, 215, 0, 0.25);
+}
+
+.mode-selection-card:hover::before {
+  opacity: 1;
+}
+
+.mode-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
+  animation: floatIcon 3s ease-in-out infinite alternate;
+}
+
+@keyframes floatIcon {
+  0% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(-10px) rotate(3deg); }
+}
+
+.mode-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.mode-description {
+  font-size: 1.05rem;
+  color: #dddddd;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+/* Temple Kirtan Mode Layout */
+.kirtan-main-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 20px;
+  z-index: 10;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Swaying Temple Bells */
+.kirtan-bell-hanger {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.kirtan-bell-left {
+  left: 10%;
+}
+
+.kirtan-bell-right {
+  right: 10%;
+}
+
+.kirtan-chain {
+  width: 4px;
+  height: 120px;
+  background: linear-gradient(to bottom, #7a5c1e, #ffd700);
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+}
+
+.kirtan-bell-body {
+  font-size: 3.5rem;
+  margin-top: -5px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.kirtan-bell-hanger.active-ringing {
+  animation: swayBell 1.2s ease-in-out infinite alternate;
+  transform-origin: top center;
+}
+
+@keyframes swayBell {
+  0% { transform: rotate(-15deg); }
+  100% { transform: rotate(15deg); }
+}
+
+/* Conch Shankh Section */
+.kirtan-shankh-container {
+  position: absolute;
+  bottom: 25%;
+  left: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 5;
+  background: rgba(18, 18, 24, 0.6);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 15px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+.kirtan-shankh-container:hover {
+  transform: scale(1.1);
+  border-color: #ffd700;
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.3);
+}
+
+.kirtan-shankh-icon {
+  font-size: 3rem;
+  animation: shakeShankh 4s ease-in-out infinite alternate;
+  display: inline-block;
+}
+
+@keyframes shakeShankh {
+  0% { transform: rotate(-5deg) scale(1); }
+  100% { transform: rotate(5deg) scale(1.05); }
+}
+
+.kirtan-shankh-label {
+  font-size: 0.85rem;
+  color: #ffd700;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* Pulsing Kirtan Board */
+.kirtan-board {
+  max-width: 700px;
+  width: 100%;
+  background: rgba(18, 18, 24, 0.7);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 30px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 30px rgba(255, 215, 0, 0.15);
+  margin: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.kirtan-board.pulsing {
+  animation: boardPulse 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes boardPulse {
+  0% {
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 30px rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 0.4);
+  }
+  100% {
+    box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 50px rgba(255, 215, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.8);
+  }
+}
+
+.kirtan-large-text {
+  font-size: 3.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px;
+  text-shadow: 0 0 30px rgba(255,215,0,0.4);
+  letter-spacing: 2px;
+  animation: textFloat 3s ease-in-out infinite;
+}
+
+@keyframes textFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.03); }
+}
+
+.kirtan-beats-glow {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.beat-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: all 0.2s ease;
+}
+
+.beat-dot.active {
+  background: #ffd700;
+  box-shadow: 0 0 15px #ffd700, 0 0 5px #ffd700;
+  transform: scale(1.3);
+}
+
+.beat-dot.clap-active {
+  background: #ff4b2b;
+  box-shadow: 0 0 15px #ff4b2b, 0 0 5px #ff4b2b;
+  transform: scale(1.3);
+}
+
+/* Clapping Animation Overlay */
+.clap-overlay-visual {
+  position: absolute;
+  right: 8%;
+  bottom: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(18, 18, 24, 0.6);
+  border: 1px solid rgba(255, 75, 43, 0.3);
+  padding: 15px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 5;
+  transition: all 0.3s ease;
+}
+
+.clap-overlay-visual.pulsing {
+  transform: scale(1.15);
+  border-color: #ff4b2b;
+  box-shadow: 0 12px 40px rgba(255, 75, 43, 0.4);
+}
+
+.clap-emoji {
+  font-size: 3rem;
+  transition: transform 0.1s ease;
+  display: inline-block;
+}
+
+.clap-overlay-visual.pulsing .clap-emoji {
+  transform: scale(1.2) rotate(-5deg);
+}
+
+/* Immersive Flower Pedals */
+.flower-rain-particle {
+  position: absolute;
+  top: -20px;
+  font-size: 1.5rem;
+  pointer-events: none;
+  z-index: 2;
+  animation: fallpedal linear forwards;
+}
+
+@keyframes fallpedal {
+  0% {
+    transform: translateY(0) rotate(0deg) translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg) translateX(50px);
+    opacity: 0;
+  }
+}
+
 
 
