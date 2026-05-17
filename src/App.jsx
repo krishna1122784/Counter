@@ -748,18 +748,18 @@ function App() {
     };
   }, [autoMode, spawnText, intervalSeconds]);
 
-  // Prevent screen sleep in Auto Mode
+  // Prevent screen sleep on all devices (mobile, iOS, desktop) as long as the page is open and visible
   useEffect(() => {
     let wakeLock = null;
 
     const requestLock = async () => {
       try {
-        if ('wakeLock' in navigator && autoMode) {
+        if ('wakeLock' in navigator) {
           wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Wake Lock acquired successfully.');
+          console.log('Global Screen Wake Lock acquired successfully.');
         }
       } catch (err) {
-        console.warn('Failed to acquire Wake Lock:', err);
+        console.warn('Failed to acquire global Wake Lock:', err);
       }
     };
 
@@ -768,29 +768,30 @@ function App() {
         if (wakeLock !== null) {
           await wakeLock.release();
           wakeLock = null;
-          console.log('Wake Lock released.');
+          console.log('Global Screen Wake Lock released.');
         }
       } catch (err) {
-        console.warn('Failed to release Wake Lock:', err);
+        console.warn('Failed to release global Wake Lock:', err);
       }
     };
 
-    if (autoMode) {
-      requestLock();
+    // Acquire lock immediately on mount
+    requestLock();
 
-      const handleVisibility = () => {
-        if (document.visibilityState === 'visible') {
-          requestLock();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibility);
-
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibility);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        requestLock();
+      } else {
         releaseLock();
-      };
-    }
-  }, [autoMode]);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      releaseLock();
+    };
+  }, []);
 
   if (!user) {
     return (
