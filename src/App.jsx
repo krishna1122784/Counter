@@ -947,7 +947,7 @@ function App() {
 
       <div className="ui-overlay" style={{ zoom: zoomLevel }}>
         <div className="top-bar">
-          <div className="user-greeting">{TRANSLATIONS[language].greeting}, {user.username}</div>
+          <div className="user-greeting">{chantText || TRANSLATIONS[language].greeting}, {user.username}</div>
           <div className="top-controls">
             <LanguageSelector currentLang={language} onChange={handleLanguageChange} />
             <input type="file" accept="image/*" multiple ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
