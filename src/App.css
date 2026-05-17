@@ -244,27 +244,124 @@
 
 .spawning-text {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.spawning-text-chant {
   font-size: 3.5rem;
   font-weight: 900;
-  color: #fff;
   white-space: nowrap;
-  /* Gold text with nice shadow */
   background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
-  
-  /* Will be animated via Framer Motion or React state */
-  top: 50%;
-  transform: translateY(-50%);
 }
 
-.spawning-text.text-red {
+.spawning-text.text-red .spawning-text-chant {
   background: linear-gradient(to right, #ff4b2b, #ff416c, #ff4b2b);
   -webkit-background-clip: text;
   background-clip: text;
+  color: transparent;
   filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6));
+}
+
+.spawning-text-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.count-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #ffffff, #dcdcdc, #ffffff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
+}
+
+.spawning-text.text-red .count-number {
+  background: linear-gradient(to right, #ff9a9e, #fecfef);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 6px rgba(255, 154, 158, 0.7));
+}
+
+.count-emoji {
+  font-size: 2.2rem;
+  color: initial; /* Reset text gradient for emoji */
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+}
+
+/* Language Selector styling */
+.lang-selector {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.lang-selector:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.lang-selector option {
+  background: #141419;
+  color: white;
+}
+
+/* Quick Select Chant Pills */
+.chant-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.chant-pill {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chant-pill:hover {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.35);
+  color: #ffd700;
+  transform: translateY(-1px);
+}
+
+.chant-pill.active {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: #ffd700;
+  color: #ffd700;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
 }
 
 /* Setup Screen / Modal */
@@ -548,5 +645,101 @@
 .w-100 {
   width: 100%;
 }
+
+/* Virtual Keyboard Styling */
+.virtual-keyboard {
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 20px;
+  padding: 15px;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vk-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.vk-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vk-key {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 26px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.vk-key:hover {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+  color: #ffd700;
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.vk-key:active {
+  transform: scale(0.95);
+}
+
+.vk-key.special-key {
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 0.85rem;
+  width: auto;
+  padding: 8px 15px;
+  flex-grow: 1;
+}
+
+.vk-key.special-key:hover {
+  background: rgba(255, 75, 43, 0.25);
+  border-color: #ff4b2b;
+  color: #ff4b2b;
+  box-shadow: 0 0 10px rgba(255, 75, 43, 0.3);
+}
+
+.vk-key.space-key {
+  width: auto;
+  padding: 8px 40px;
+  flex-grow: 2;
+}
+
+.vk-key.space-key:hover {
+  background: rgba(56, 239, 125, 0.2);
+  border-color: #38ef7d;
+  color: #38ef7d;
+  box-shadow: 0 0 10px rgba(56, 239, 125, 0.3);
+}
+
+/* Active Keyboard Button State */
+.active-kbd {
+  background: rgba(255, 215, 0, 0.2) !important;
+  border-color: #ffd700 !important;
+  color: #ffd700 !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
+}
+
 
 
